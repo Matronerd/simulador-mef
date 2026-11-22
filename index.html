@@ -211,7 +211,7 @@ const Au={ac:null,next:0,
 
 /* ---------- Monitor ---------- */
 const cv=$('cv'), cx=cv.getContext('2d'), N=3600, DUR=1800;
-const M={c:null,sig:null,t:0,play:false,last:0,stops:[],onStop:null,onEnd:null,maxT:DUR};
+const M={c:null,sig:null,t:0,play:false,last:0,stops:[],done:-1,onStop:null,onEnd:null,maxT:DUR};
 const tok=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 function fit(){const r=cv.getBoundingClientRect(),d=window.devicePixelRatio||1;cv.width=Math.round(r.width*d);cv.height=Math.round(r.height*d);cx.setTransform(d,0,0,d,0,0);draw()}
 function draw(){ const W=cv.clientWidth,H=cv.clientHeight; if(!W)return; cx.clearRect(0,0,W,H);
@@ -242,13 +242,13 @@ function ui(){ const i=Math.min(N-1,Math.floor(M.t*2)), has=!!M.sig;
   $('b-play').textContent=M.play?'Pausar':(M.t>0&&M.t<M.maxT?'Continuar':'Iniciar'); $('b-play').disabled=!has||M.t>=M.maxT||(mode==='auto'&&A.phase==='ask')||(mode==='sim'&&Sim.phase!=='run'&&Sim.phase!=='intro');
   if(!$('scrub').hidden)$('scrub').value=Math.floor(M.t); }
 function frame(ts){ if(!M.play)return; const dt=Math.min(.1,(ts-M.last)/1000); M.last=ts; let t=M.t+dt*(+$('speed').value);
-  const stop=M.stops.find(s=>M.t<s&&t>=s);
-  if(stop!=null){M.t=stop;halt();M.onStop&&M.onStop(stop)}
-  else if(t>=DUR){M.t=DUR;halt();M.onEnd&&M.onEnd()}
+  const stop=M.stops.find(s=>s>M.done+0.5&&M.t<s&&t>=s);
+  if(stop!=null){M.t=stop;M.done=stop;halt();M.onStop&&M.onStop(stop)}
+  else if(t>=M.maxT){M.t=M.maxT;halt();M.onEnd&&M.onEnd()}
   else{M.t=t; Au.tick(curF(),true); ui(); draw(); requestAnimationFrame(frame)} }
 function halt(){M.play=false;Au.tick(0,false);ui();draw()}
 function go(){ if(!M.sig||M.t>=M.maxT)return; Au.init(); if(Au.ac)Au.ac.resume(); M.play=true; M.last=performance.now(); ui(); requestAnimationFrame(frame) }
-function setCase(c){ halt(); M.c=c; M.sig=null; M.t=0; ui(); draw(); return loadSig(c).then(s=>{ if(M.c===c){M.sig=s; ui(); draw()} }).catch(e=>{$('r-e').textContent='Sin datos'}) }
+function setCase(c){ halt(); M.c=c; M.sig=null; M.t=0; M.done=-1; ui(); draw(); return loadSig(c).then(s=>{ if(M.c===c){M.sig=s; ui(); draw()} }).catch(e=>{$('r-e').textContent='Sin datos'}) }
 $('b-play').onclick=()=>M.play?halt():go();
 $('b-reset').onclick=()=>{ if(mode==='auto')startCase(A.c); else if(mode==='sim')startSim(); else{halt();M.t=0;ui();draw()} };
 $('view').onchange=draw; $('vol').oninput=()=>{Au.setVol();store.set('vol',+$('vol').value)}; $('snd').onchange=()=>Au.tick(curF(),M.play);
@@ -329,7 +329,7 @@ const ACT=[['pos','Cambiar posición materna (decúbito lateral)'],['flu','Bolo 
 const OXI={on:'Oxitocina en curso.',up:'Oxitocina en curso, dosis aumentada.',off:'Oxitocina suspendida.'};
 function startSim(){ Sim.lvl=2; Sim.oxi='on'; Sim.blk=0; Sim.phase='intro'; Sim.log=[]; Sim.end=null;
   Sim.buf={f:new Uint8Array(N),u:new Uint8Array(N)}; Sim.g={ev:[],nextC:40,nextA:50,a:null,ar:0,ph:rnd()*6}; simGen(0,1200,0,2,170);
-  halt(); M.c=Sim.c; M.sig=Sim.buf; M.t=0; M.stops=[600,1200]; M.maxT=DUR; M.onStop=M.onEnd=()=>{Sim.phase='ask';renderSim()}; renderSim(); draw() }
+  halt(); M.c=Sim.c; M.sig=Sim.buf; M.t=0; M.done=-1; M.stops=[600,1200]; M.maxT=DUR; M.onStop=M.onEnd=()=>{Sim.phase='ask';renderSim()}; renderSim(); draw() }
 function simApply(sel){ const before=Sim.lvl, fb=[]; let d=0, justOff=false;
   if(sel.exp){ fb.push(before>=3?'Preparar parto expedito: oportuno, el trazado no respondía y seguía deteriorándose.':'Preparar parto expedito: prematuro. Era un trazado categoría '+simCat(before)+' que aún podía responder a medidas de reanimación.');
     Sim.log.push({blk:Sim.blk,sel,before,after:before,fb}); return simFinish(true) }
