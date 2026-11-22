@@ -85,7 +85,10 @@ table{border-collapse:collapse;width:100%;font-size:13px}
 th,td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--line);vertical-align:top}
 th{color:var(--muted);font-weight:500}
 .scroll{overflow-x:auto}
-footer{font-size:12px;color:var(--muted);max-width:90ch}
+footer{font-size:12px;color:var(--muted)}
+.foot-cols{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.foot-cols p{margin:0}
+@media (max-width:760px){.foot-cols{grid-template-columns:1fr;gap:12px}}
 footer a{color:var(--accent)}
 </style>
 
@@ -171,9 +174,10 @@ footer a{color:var(--accent)}
 </div>
 
 <footer>
-  <strong>Material docente de apoyo. No reemplaza las guías clínicas, el monitoreo real ni el juicio profesional.</strong> Los contextos clínicos, los textos de retroalimentación y las reglas de la simulación se elaboraron con asistencia de inteligencia artificial y <strong>requieren revisión y validación por docentes</strong> antes de usarse con estudiantes. Toda decisión clínica se toma bajo supervisión humana.
-  <br><br>
-  Trazados reales de la CTU-CHB Intrapartum Cardiotocography Database v1.0.0 (PhysioNet, <a href="https://doi.org/10.13026/C22013">doi:10.13026/C22013</a>), disponible bajo la licencia <a href="https://physionet.org/about/licenses/open-data-commons-attribution-license-v10/">Open Data Commons Attribution v1.0</a>. Cita: Chudáček V. et al., Open access intrapartum CTG database. BMC Pregnancy and Childbirth 2014;14:16. Los tramos fueron recortados a 30 min y reducidos en resolución; los contextos son agregados docentes, no datos de la base. El sonido es sintetizado a partir de la FCF registrada.
+  <div class="foot-cols">
+    <p><strong>Material docente de apoyo. No reemplaza las guías clínicas, el monitoreo real ni el juicio profesional.</strong> Los contextos clínicos, los textos de retroalimentación y las reglas de la simulación se elaboraron con asistencia de inteligencia artificial y <strong>requieren revisión y validación por docentes</strong> antes de usarse con estudiantes. Toda decisión clínica se toma bajo supervisión humana.</p>
+    <p>Trazados reales de la CTU-CHB Intrapartum Cardiotocography Database v1.0.0 (PhysioNet, <a href="https://doi.org/10.13026/C22013">doi:10.13026/C22013</a>), disponible bajo la licencia <a href="https://physionet.org/about/licenses/open-data-commons-attribution-license-v10/">Open Data Commons Attribution v1.0</a>. Cita: Chudáček V. et al., Open access intrapartum CTG database. BMC Pregnancy and Childbirth 2014;14:16. Los tramos fueron recortados a 30 min y reducidos en resolución; los contextos son agregados docentes, no datos de la base. El sonido es sintetizado a partir de la FCF registrada.</p>
+  </div>
 </footer>
 </div>
 
