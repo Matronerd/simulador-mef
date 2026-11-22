@@ -1,4 +1,4 @@
-<title>Simulador MEF</title>
+<title>CTG · Monitorización fetal</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
@@ -29,6 +29,8 @@ header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-betw
 h1{font-size:20px;font-weight:600;margin:0;letter-spacing:-.01em}
 h1 small{font-weight:400;color:var(--muted);font-size:14px;margin-left:8px}
 h2{font-size:15px;font-weight:600;margin:0}
+.subtabs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.subtabs button{font-size:14px;padding:6px 12px}
 .tabs{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--panel)}
 .tabs button{border:0;background:transparent;color:var(--muted);font:500 14px var(--sans);padding:8px 16px;cursor:pointer}
 .tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
@@ -92,11 +94,10 @@ footer a{color:var(--accent)}
 
 <div class="wrap">
 <header>
-  <h1>Simulador MEF<small>monitorización electrónica fetal intraparto</small></h1>
+  <h1>CTG<small>monitorización electrónica fetal intraparto</small></h1>
   <div class="tabs" role="tablist">
     <button role="tab" id="tab-auto" aria-selected="true">Autoinstrucción</button>
-    <button role="tab" id="tab-sala" aria-selected="false">Sala de monitoreos</button>
-    <button role="tab" id="tab-sim" aria-selected="false">Simulación</button>
+    <button role="tab" id="tab-ctgsim" aria-selected="false">CTG-SIM</button>
   </div>
 </header>
 
@@ -139,7 +140,7 @@ footer a{color:var(--accent)}
       <p style="margin:6px 0 0">Mujer de 29 años, nulípara, embarazo de 39 semanas. Inducción con oxitocina en bomba, en aumento cada 30 minutos. Dilatación de 6 cm, membranas rotas con líquido claro, analgesia peridural. Signos vitales maternos normales.</p>
       <p class="small muted" style="margin:8px 0 0" id="sim-oxi"></p>
     </div>
-    <div class="card pausebox" id="sim-step"></div>
+    <div class="card pausebox" id="sim-step" hidden></div>
     <p class="note" style="margin:0">Trazado sintético: cambia según tus acciones. Las reglas de respuesta son un borrador y deben validarlas docentes antes de usarlo con estudiantes.</p>
   </div>
 
@@ -173,7 +174,9 @@ footer a{color:var(--accent)}
 </div>
 
 <footer>
-  Material docente; no reemplaza las guías clínicas ni el juicio profesional. Trazados reales de la CTU-CHB Intrapartum Cardiotocography Database v1.0.0 (PhysioNet, <a href="https://doi.org/10.13026/C22013">doi:10.13026/C22013</a>), disponible bajo la licencia <a href="https://physionet.org/about/licenses/open-data-commons-attribution-license-v10/">Open Data Commons Attribution v1.0</a>: Chudáček V. et al., Open access intrapartum CTG database. BMC Pregnancy and Childbirth 2014;14:16. Los tramos fueron recortados a 30 min y reducidos en resolución a partir de la base original; los contextos clínicos y los textos de retroalimentación son agregados docentes, no datos de la base, y están sin revisión docente. El sonido es sintetizado a partir de la FCF registrada.
+  <strong>Material docente de apoyo. No reemplaza las guías clínicas, el monitoreo real ni el juicio profesional.</strong> Los contextos clínicos, los textos de retroalimentación y las reglas de la simulación se elaboraron con asistencia de inteligencia artificial y <strong>requieren revisión y validación por docentes</strong> antes de usarse con estudiantes. Toda decisión clínica se toma bajo supervisión humana.
+  <br><br>
+  Trazados reales de la CTU-CHB Intrapartum Cardiotocography Database v1.0.0 (PhysioNet, <a href="https://doi.org/10.13026/C22013">doi:10.13026/C22013</a>), disponible bajo la licencia <a href="https://physionet.org/about/licenses/open-data-commons-attribution-license-v10/">Open Data Commons Attribution v1.0</a>. Cita: Chudáček V. et al., Open access intrapartum CTG database. BMC Pregnancy and Childbirth 2014;14:16. Los tramos fueron recortados a 30 min y reducidos en resolución; los contextos son agregados docentes, no datos de la base. El sonido es sintetizado a partir de la FCF registrada.
 </footer>
 </div>
 
@@ -358,18 +361,22 @@ function renderSim(){ const el=$('sim-step'); $('sim-oxi').textContent=OXI[Sim.o
   else{ el.innerHTML='<h2>Desenlace simulado</h2><p style="margin:6px 0 10px">'+esc(Sim.end)+'</p><div class="scroll"><table><tr><th>Pausa</th><th>Acciones y comentario</th><th>Efecto</th></tr>'+
     Sim.log.map(r=>'<tr><td>'+(r.blk*10+10)+' min<br><span class="muted small">Cat. '+simCat(r.before)+'</span></td><td>'+r.fb.map(esc).join('<br>')+'</td><td>'+(r.sel.exp||r.blk>=2?'—':r.after<r.before?'<span class="up">Mejoró</span>':r.after>r.before?'<span class="down">Empeoró</span>':'Sin cambio')+'</td></tr>').join('')+
     '</table></div><div class="bar" style="margin-top:12px"><button class="btn pri" id="sim-again">Repetir con otras decisiones</button></div>'; $('sim-again').onclick=startSim }
-  ui() }
+  $('sim-step').hidden=!$('sim-step').innerHTML.trim(); ui() }
 
 /* ---------- Módulos ---------- */
 let mode='auto';
-const HASH={auto:'autoinstruccion',sala:'sala',sim:'simulacion'}, fromHash=()=>location.hash==='#sala'?'sala':location.hash==='#simulacion'?'sim':'auto';
-function setMode(m){ mode=m; halt();
-  ['auto','sala','sim'].forEach(k=>{$('tab-'+k).setAttribute('aria-selected',k===m); $('side-'+k).hidden=k!==m});
-  const sala=m==='sala'; $('sala-info').hidden=!sala; $('scrub').hidden=!sala; $('b-proj').hidden=!sala;
-  if(!sala){$('grid').classList.remove('proj');$('b-proj').textContent='Ampliar monitor'}
-  if(m==='auto')startCase(A.c||L1[0]); else if(sala){renderList(); pick(S.c||L1[0]||CAT[0])} else startSim();
+const HASH={auto:'autoinstruccion',sim:'ctgsim'};
+const fromHash=()=>(location.hash==='#ctgsim'||location.hash==='#simulacion')?'sim':'auto';
+function setMode(m){ if(m==='sala')m='sim'; mode=m; halt();
+  $('tab-auto').setAttribute('aria-selected',m==='auto');
+  $('tab-ctgsim').setAttribute('aria-selected',m==='sim');
+  ['auto','sala','sim'].forEach(k=>{$('side-'+k).hidden=k!==m});
+  $('sala-info').hidden=true; $('scrub').hidden=true; $('b-proj').hidden=true;
+  $('grid').classList.remove('proj'); $('b-proj').textContent='Ampliar monitor';
+  if(m==='auto')startCase(A.c||L1[0]); else startSim();
   fit(); if(location.hash!=='#'+HASH[m])try{history.replaceState(null,'','#'+HASH[m])}catch(e){} }
-['auto','sala','sim'].forEach(k=>{$('tab-'+k).onclick=()=>setMode(k)});
+$('tab-auto').onclick=()=>setMode('auto');
+$('tab-ctgsim').onclick=()=>setMode('sim');
 window.addEventListener('hashchange',()=>{const m=fromHash(); if(m!==mode)setMode(m)});
 $('vol').value=store.get('vol',70);
 if(!CAT.length){$('step').textContent='No se pudo cargar el catálogo de casos. Recarga la página.'}
