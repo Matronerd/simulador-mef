@@ -41,6 +41,7 @@ h2{font-size:15px;font-weight:600;margin:0}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;min-width:0}
 .side{display:flex;flex-direction:column;gap:12px;min-width:0}
 .main{display:flex;flex-direction:column;gap:12px;min-width:0}
+[hidden]{display:none!important}
 .muted{color:var(--muted)} .small{font-size:13px}
 button,select,input{font:inherit;color:inherit}
 .btn{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:7px 12px;cursor:pointer;font-weight:500;font-size:14px}
@@ -65,10 +66,6 @@ canvas{display:block;width:100%;height:440px}
 .acts{display:flex;flex-direction:column;gap:6px;margin-top:10px}
 .acts label{display:flex;gap:8px;align-items:flex-start;font-size:14px}
 .up{color:var(--ok);font-weight:500}.down{color:var(--danger);font-weight:500}
-.caseg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-.caseg button{padding:8px 0;text-align:center;font-family:var(--mono)}
-.caseg button.cur{background:var(--accent-soft);border-color:var(--accent)}
-.caseg button.done::after{content:" ✓";color:var(--ok)}
 .field{display:flex;flex-direction:column;gap:3px;margin-top:8px}
 .field label{font-size:13px;font-weight:500}
 .field select{width:100%}
@@ -103,15 +100,15 @@ footer a{color:var(--accent)}
 
 <div class="grid" id="grid">
   <div class="side" id="side-auto">
-    <div class="card">
-      <h2>Casos del primer lote</h2>
-      <p class="small muted" style="margin:4px 0 10px">Cada caso son 30 minutos de trazado real, con una pausa de decisión cada 10 minutos. El desenlace se muestra al final.</p>
-      <div class="caseg" id="caseg"></div>
-    </div>
     <div class="card" id="ctx-card">
+      <div class="bar" style="justify-content:space-between;margin-bottom:8px">
+        <button class="btn" id="c-prev" aria-label="Caso anterior">◀</button>
+        <span class="small muted" id="c-count">Caso 1 de 12</span>
+        <button class="btn" id="c-next" aria-label="Caso siguiente">▶</button>
+      </div>
       <h2 id="ctx-title">Contexto</h2>
       <p id="ctx-text" style="margin:6px 0 0"></p>
-      <p class="small muted" style="margin:8px 0 0">Borrador generado con los datos del registro. Dilatación, oxitocina y analgesia no están en la base.</p>
+      <p class="small muted" style="margin:8px 0 0">Cada caso son 30 min de trazado real, con una pausa de decisión cada 10 min. El desenlace se muestra al final. Borrador con datos del registro; dilatación, oxitocina y analgesia no están en la base.</p>
     </div>
     <div class="card pausebox" id="step"></div>
   </div>
@@ -270,8 +267,10 @@ const Q=[['base','Línea de base',['Menor de 110 lpm (bradicardia)','110–160 l
  ['cat','Categoría ACOG',['I','II','III']],
  ['cond','Conducta',['Continuar vigilancia habitual','Vigilancia estrecha y reevaluar','Reanimación intrauterina y reevaluar','Preparar interrupción expedita']]];
 const esc=s=>String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
-function renderCases(){ const done=store.get('done',[]); $('caseg').innerHTML=L1.map(c=>`<button class="btn${A.c===c?' cur':''}${done.includes(c.id)?' done':''}" data-id="${c.id}" title="Registro ${c.id}">${c.lote1}</button>`).join('');
-  $('caseg').querySelectorAll('button').forEach(b=>b.onclick=()=>startCase(byId[b.dataset.id])) }
+function renderCases(){ const i=L1.indexOf(A.c), done=store.get('done',[]).includes(A.c&&A.c.id);
+  $('c-count').textContent='Caso '+(i<0?1:i+1)+' de '+L1.length+(done?' ✓':'');
+  $('c-prev').disabled=i<=0; $('c-next').disabled=i>=L1.length-1; }
+function stepCase(d){ const i=L1.indexOf(A.c); const j=i+d; if(j>=0&&j<L1.length)startCase(L1[j]); }
 function startCase(c){ A.c=c; A.blk=0; A.ans=[]; A.phase='intro'; M.stops=[600,1200]; M.maxT=DUR; M.onStop=()=>{A.phase='ask';renderStep()}; M.onEnd=()=>{A.phase='ask';renderStep()};
   $('ctx-title').textContent='Caso '+c.lote1+' · registro '+c.id; $('ctx-text').textContent=c.ctx; renderCases(); renderStep(); setCase(c) }
 function renderStep(){ renderStep0(); ui() }
@@ -288,7 +287,7 @@ function renderStep0(){ const el=$('step'), c=A.c; if(!c){el.innerHTML='';return
     Q.map(q=>`<tr><th>${q[1]}</th>${A.ans.map((a,i)=>`<td>${esc(a[q[0]])}${k&&k[i]&&k[i][q[0]]?(k[i][q[0]]===a[q[0]]?' <span style="color:var(--ok)">✓</span>':`<br><span style="color:var(--danger)">Pauta: ${esc(k[i][q[0]])}</span>`):''}</td>`).join('')}</tr>`).join('')+`</table></div>`+
     (k?'':`<p class="note" style="margin:10px 0 0">Este caso aún no tiene pauta docente. Tus respuestas quedan a la vista para discutirlas; la corrección automática se activa cuando el equipo complete la clasificación de cada bloque.</p>`)+
     `<div class="bar" style="margin-top:12px"><button class="btn" id="st-again">Repetir caso</button>${c.lote1<L1.length?'<button class="btn pri" id="st-next">Siguiente caso</button>':''}</div>`;
-  $('st-again').onclick=()=>startCase(c); if($('st-next'))$('st-next').onclick=()=>startCase(L1[c.lote1]); }
+  $('st-again').onclick=()=>startCase(c); if($('st-next'))$('st-next').onclick=()=>stepCase(1); }
 const _go=go; go=function(){ if(mode==='auto'&&A.phase==='intro'){A.phase='run';renderStep()} if(mode==='auto'&&A.phase==='ask')return;
   if(mode==='sim'){ if(Sim.phase==='intro'){Sim.phase='run';renderSim()} else if(Sim.phase!=='run')return } _go() };
 $('b-play').onclick=()=>M.play?halt():go();
@@ -378,6 +377,7 @@ function setMode(m){ if(m==='sala')m='sim'; mode=m; halt();
 $('tab-auto').onclick=()=>setMode('auto');
 $('tab-ctgsim').onclick=()=>setMode('sim');
 window.addEventListener('hashchange',()=>{const m=fromHash(); if(m!==mode)setMode(m)});
+$('c-prev').onclick=()=>stepCase(-1); $('c-next').onclick=()=>stepCase(1);
 $('vol').value=store.get('vol',70);
 if(!CAT.length){$('step').textContent='No se pudo cargar el catálogo de casos. Recarga la página.'}
 else setMode(fromHash());
